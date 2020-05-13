@@ -23,20 +23,6 @@ jobs:
         with:
           command: check
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
@@ -68,3 +54,37 @@ jobs:
         with:
           command: clippy
           args: --all-targets -- -D warnings
+
+  test:
+    name: Test
+    needs: [check, fmt, clippy]
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        build:
+          - stable
+          - beta
+          - nightly
+
+        include:
+          - build: stable
+            os: ubuntu-latest
+            rust: stable
+          - build: beta
+            os: ubuntu-latest
+            rust: beta
+          - build: nightly
+            os: ubuntu-latest
+            rust: nightly
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
