@@ -44,38 +44,45 @@ mod tests {
         let request = warp::test::request();
         assert!(!request.matches(&preflight).await);
 
-        let request = warp::test::request().method("OPTIONS");
-        assert!(!request.matches(&preflight).await);
-
         let request = warp::test::request()
             .method("OPTIONS")
-            .header("access-control-request-method", "GET");
-        assert!(!request.matches(&preflight).await);
-
-        let request = warp::test::request()
-            .method("OPTIONS")
-            .header("access-control-request-method", "GET")
-            .header("access-control-request-headers", "Origin");
+            .path("http://localhost/http://example.org");
         assert!(!request.matches(&preflight).await);
 
         let request = warp::test::request()
             .method("OPTIONS")
             .header("access-control-request-method", "GET")
-            .header("origin", "localhost");
+            .path("http://localhost/http://example.org");
+        assert!(!request.matches(&preflight).await);
+
+        let request = warp::test::request()
+            .method("OPTIONS")
+            .header("access-control-request-method", "GET")
+            .header("access-control-request-headers", "Origin")
+            .path("http://localhost/http://example.org");
+        assert!(!request.matches(&preflight).await);
+
+        let request = warp::test::request()
+            .method("OPTIONS")
+            .header("access-control-request-method", "GET")
+            .header("origin", "localhost")
+            .path("http://localhost/http://example.org");
         assert!(!request.matches(&preflight).await);
 
         let request = warp::test::request()
             .method("GET")
             .header("access-control-request-method", "GET")
             .header("access-control-request-headers", "Origin")
-            .header("origin", "localhost");
+            .header("origin", "localhost")
+            .path("http://localhost/http://example.org");
         assert!(!request.matches(&preflight).await);
 
         let request = warp::test::request()
             .method("OPTIONS")
             .header("access-control-request-method", "GET")
             .header("access-control-request-headers", "Origin")
-            .header("origin", "localhost");
+            .header("origin", "localhost")
+            .path("http://localhost/http://example.org");
         assert!(request.matches(&preflight).await);
     }
 }

@@ -53,6 +53,23 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    async fn test_is_url_path() {
+        let is_url_path = is_url_path();
+
+        let request = warp::test::request().path("http://localhost/");
+        assert!(!request.matches(&is_url_path).await);
+
+        let request = warp::test::request().path("http://localhost/somepath/");
+        assert!(!request.matches(&is_url_path).await);
+
+        let request = warp::test::request().path("http://localhost/example.org/");
+        assert!(!request.matches(&is_url_path).await);
+
+        let request = warp::test::request().path("http://localhost/ftp://example.org/");
+        assert!(!request.matches(&is_url_path).await);
+    }
+
+    #[tokio::test]
     async fn test_url_path() {
         let url_path = url_path();
 
