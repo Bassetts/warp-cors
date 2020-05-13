@@ -58,17 +58,19 @@ jobs:
   test:
     name: Test
     runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
         build:
+          - msrv
           - stable
           - beta
           - nightly
           - macos
           - win-msvc
-
         include:
+          - build: msrv
+            os: ubuntu-latest
+            rust: 1.39.0
           - build: stable
             os: ubuntu-latest
             rust: stable
@@ -84,7 +86,6 @@ jobs:
           - build: win-msvc
             os: windows-latest
             rust: nightly
-
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
