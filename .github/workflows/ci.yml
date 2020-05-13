@@ -81,6 +81,8 @@ jobs:
           - beta
           - nightly
           - nightly-musl
+          - nightly-32
+          - nightly-arm
           - macos
           - win-msvc
           - win-gnu
@@ -101,13 +103,21 @@ jobs:
             os: ubuntu-latest
             rust: nightly
             target: x86_64-unknown-linux-musl
+          - build: nightly-32
+            os: ubuntu-latest
+            rust: nightly
+            target: i686-unknown-linux-gnu
+          - build: nightly-arm
+            os: ubuntu-latest
+            rust: nightly
+            target: arm-unknown-linux-gnueabihf
           - build: macos
             os: macos-latest
             rust: nightly
           - build: win-msvc
             os: windows-latest
             rust: nightly
-          - build: win-msvc
+          - build: win-gnu
             os: windows-latest
             rust: nightly-x86_64-gnu
     steps:
