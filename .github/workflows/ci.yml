@@ -57,8 +57,7 @@ jobs:
 
   test:
     name: Test
-    needs: [check, fmt, clippy]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
@@ -66,6 +65,8 @@ jobs:
           - stable
           - beta
           - nightly
+          - macos
+          - win-msvc
 
         include:
           - build: stable
@@ -76,6 +77,12 @@ jobs:
             rust: beta
           - build: nightly
             os: ubuntu-latest
+            rust: nightly
+          - build: macos
+            os: macos-latest
+            rust: nightly
+          - build: win-msvc
+            os: windows-latest
             rust: nightly
 
     steps:
