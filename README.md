@@ -1,5 +1,9 @@
 ## warp-cors
 
+[![ci](https://github.com/Bassetts/warp-cors/workflows/ci/badge.svg)](https://github.com/Bassetts/warp-cors/actions?query=workflow%3Aci)
+[![GitHub](https://img.shields.io/github/license/bassetts/warp-cors?color=blue)](./LICENSE)
+[![Crates.io](https://img.shields.io/crates/v/warp-cors)](https://crates.io/crates/warp-cors)
+
 warp-cors is a proxy server which enables CORS for the proxied request.
 
 The path of the request is validated and then used as the url to proxy. Only
