@@ -10,7 +10,7 @@ on:
 
 jobs:
   check:
-    name: Check
+    name: cargo check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -29,7 +29,7 @@ jobs:
           command: check
 
   fmt:
-    name: Rustfmt
+    name: rustfmt
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -43,14 +43,14 @@ jobs:
           override: true
           components: rustfmt
 
-      - name: Check formatting
+      - name: Run cargo fmt
         uses: actions-rs/cargo@v1
         with:
           command: fmt
           args: --all -- --check
 
   clippy:
-    name: Clippy
+    name: clippy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -64,15 +64,17 @@ jobs:
           override: true
           components: clippy
 
-      - name: Check lints
+      - name: Run cargo clippy
         uses: actions-rs/cargo@v1
         with:
           command: clippy
           args: --all-targets -- -D warnings
 
   test:
-    name: Test
+    name: test
     runs-on: ${{ matrix.os }}
+    env:
+      RUST_BACKTRACE: 1
     strategy:
       fail-fast: false
       matrix:
@@ -133,7 +135,22 @@ jobs:
           override: true
           target: ${{ matrix.target }}
 
-      - name: Run tests
+      - name: Build warp-cors natively
+        uses: actions-rs/cargo@v1
+        if: matrix.target == ''
+        with:
+          command: build
+          args: --verbose
+
+      - name: Build warp-cors with cross
+        uses: actions-rs/cargo@v1
+        if: matrix.target != ''
+        with:
+          command: build
+          use-cross: true
+          args: --verbose --target ${{ matrix.target }}
+
+      - name: Run tests natively
         uses: actions-rs/cargo@v1
         if: matrix.target == ''
         with:
@@ -143,6 +160,6 @@ jobs:
         uses: actions-rs/cargo@v1
         if: matrix.target != ''
         with:
-          use-cross: true
           command: test
+          use-cross: true
           args: --target ${{ matrix.target }}
