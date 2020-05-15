@@ -22,6 +22,9 @@ jobs:
           short_version="${version_parts[0]}"."${version_parts[1]}"
           echo "::set-output name=version::$short_version"
 
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Build Docker image
         uses: docker/build-push-action@v1
         with:
