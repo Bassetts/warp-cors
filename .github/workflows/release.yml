@@ -14,12 +14,12 @@ jobs:
         run: mkdir artifacts
 
       - name: Get the release version
-        id: get_release_version
+        id: get_version
         run: echo "::set-output name=version::${GITHUB_REF#refs/tags/}"
 
       - name: Save release version number to artifact
         run: |
-          echo "${{ steps.get_release_version.outputs.version }}" \
+          echo "${{ steps.get_version.outputs.version }}" \
           > artifacts/release-version
 
       - name: Create github release
@@ -28,8 +28,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.get_release_version.outputs.version }}
-          release_name: ${{ steps.get_release_version.outputs.version }}
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: ${{ steps.get_version.outputs.version }}
           draft: true
 
       - name: Save upload url to artifact
