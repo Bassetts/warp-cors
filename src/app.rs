@@ -1,8 +1,11 @@
 use std::net::SocketAddr;
 
 use clap::{crate_authors, crate_name, crate_version, App, AppSettings, Arg};
-use log::{debug, info};
+use log::{debug, error, info};
+#[cfg(unix)]
+use tokio::signal::unix::{signal, SignalKind};
 
+use crate::error;
 use crate::routes;
 
 pub struct Config {
@@ -48,6 +51,41 @@ pub async fn run(config: Config) {
 
     debug!("Using host/alias: {}", config.host);
 
-    info!("Listening on {}", addr);
-    warp::serve(routes::routes(config.host)).run(addr).await;
+    let (addr, server) =
+        warp::serve(routes::routes(config.host)).bind_with_graceful_shutdown(addr, async {
+            let signal = shutdown_signal().await;
+            if let Err(e) = signal {
+                error!("server error: {}", e);
+            }
+        });
+
+    info!("Listening on http://{}", addr);
+
+    server.await;
+}
+
+#[cfg(not(unix))]
+async fn shutdown_signal() -> Result<(), error::Error> {
+    tokio::signal::ctrl_c().await?;
+
+    info!("Received CTRL-C event");
+
+    Ok(())
+}
+
+#[cfg(unix)]
+async fn shutdown_signal() -> Result<(), error::Error> {
+    let mut term = signal(SignalKind::terminate())?;
+    let mut int = signal(SignalKind::interrupt())?;
+
+    tokio::select! {
+        _ = int.recv() => {
+            info!("Received SIGINT");
+        }
+        _ = term.recv() => {
+            info!("Received SIGTERM");
+        }
+    }
+
+    Ok(())
 }
