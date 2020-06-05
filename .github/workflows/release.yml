@@ -107,6 +107,19 @@ jobs:
           use-cross: true
           args: --verbose --release --target ${{ matrix.target }}
 
+      - name: Strip release binary (Linux and macOS)
+        if: |
+          matrix.build == 'linux' ||
+          matrix.build == 'linux-arm' ||
+          matrix.build == 'macos'
+        run: |
+          if [[ "${{ matrix.build }}" == "linux-arm" ]]; then
+            sudo apt install binutils-arm-linux-gnueabihf
+            arm-linux-gnueabihf-strip target/${{ matrix.target }}/release/github-action-test
+          else
+            strip target/${{ matrix.target }}/release/github-action-test
+          fi
+
       - name: Build archive
         id: build_archive
         shell: bash
