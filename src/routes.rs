@@ -9,7 +9,9 @@ pub fn routes(host: String) -> impl Filter<Extract = impl Reply, Error = Rejecti
     let client = HttpsClient::new();
     preflight()
         .or(proxy(host, client))
-        .map(filters::allow_any_origin)
+        .and(warp::header("origin"))
+        .map(filters::allow_origin)
+        .map(filters::allow_credentials)
         .with(warp::log("warp_cors"))
         .recover(error::recover)
 }
@@ -17,9 +19,8 @@ pub fn routes(host: String) -> impl Filter<Extract = impl Reply, Error = Rejecti
 fn preflight() -> impl Filter<Extract = impl Reply, Error = Rejection> + Copy {
     filters::is_url_path()
         .and(warp::options())
-        .and(filters::has_header("access-control-request-method"))
-        .and(filters::has_header("access-control-request-headers"))
-        .and(filters::has_header("origin"))
+        .and(warp::header("access-control-request-method"))
+        .and(warp::header("access-control-request-headers"))
         .and_then(handlers::preflight_request)
 }
 
@@ -36,6 +37,29 @@ fn proxy(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn test_routes() {
+        let host = "example.org".to_owned();
+        let routes = routes(host);
+
+        let request = warp::test::request();
+        assert!(!request.matches(&routes).await);
+
+        let request = warp::test::request()
+            .method("OPTIONS")
+            .header("access-control-request-method", "GET")
+            .header("access-control-request-headers", "Origin")
+            .header("origin", "localhost")
+            .path("http://localhost/http://example.org");
+        assert!(request.matches(&routes).await);
+
+        let request = warp::test::request()
+            .method("GET")
+            .header("origin", "localhost")
+            .path("http://localhost/http://example.org");
+        assert!(request.matches(&routes).await);
+    }
 
     #[tokio::test]
     async fn test_preflight() {
@@ -58,13 +82,6 @@ mod tests {
         let request = warp::test::request()
             .method("OPTIONS")
             .header("access-control-request-method", "GET")
-            .header("access-control-request-headers", "Origin")
-            .path("http://localhost/http://example.org");
-        assert!(!request.matches(&preflight).await);
-
-        let request = warp::test::request()
-            .method("OPTIONS")
-            .header("access-control-request-method", "GET")
             .header("origin", "localhost")
             .path("http://localhost/http://example.org");
         assert!(!request.matches(&preflight).await);
@@ -76,6 +93,13 @@ mod tests {
             .header("origin", "localhost")
             .path("http://localhost/http://example.org");
         assert!(!request.matches(&preflight).await);
+
+        let request = warp::test::request()
+            .method("OPTIONS")
+            .header("access-control-request-method", "GET")
+            .header("access-control-request-headers", "Origin")
+            .path("http://localhost/http://example.org");
+        assert!(request.matches(&preflight).await);
 
         let request = warp::test::request()
             .method("OPTIONS")
