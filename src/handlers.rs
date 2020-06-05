@@ -5,10 +5,13 @@ use warp::http::header::{ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_METH
 
 use crate::client;
 
-pub(crate) async fn preflight_request() -> Result<impl warp::Reply, Infallible> {
+pub(crate) async fn preflight_request(
+    method: String,
+    headers: String,
+) -> Result<impl warp::Reply, Infallible> {
     trace!("Preflight request received");
-    let reply = warp::reply::with_header(warp::reply(), ACCESS_CONTROL_ALLOW_METHODS, "*");
-    let reply = warp::reply::with_header(reply, ACCESS_CONTROL_ALLOW_HEADERS, "*");
+    let reply = warp::reply::with_header(warp::reply(), ACCESS_CONTROL_ALLOW_METHODS, method);
+    let reply = warp::reply::with_header(reply, ACCESS_CONTROL_ALLOW_HEADERS, headers);
     Ok(reply)
 }
 
