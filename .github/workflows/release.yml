@@ -115,9 +115,9 @@ jobs:
         run: |
           if [[ "${{ matrix.build }}" == "linux-arm" ]]; then
             sudo apt install binutils-arm-linux-gnueabihf
-            arm-linux-gnueabihf-strip target/${{ matrix.target }}/release/github-action-test
+            arm-linux-gnueabihf-strip target/${{ matrix.target }}/release/warp-cors
           else
-            strip target/${{ matrix.target }}/release/github-action-test
+            strip target/${{ matrix.target }}/release/warp-cors
           fi
 
       - name: Build archive
