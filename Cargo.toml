@@ -18,6 +18,7 @@ futures-util = "0.3"
 hyper-rustls = "0.20"
 log = "0.4"
 pretty_env_logger = "0.4"
+reqwest = { version = "0.10", default-features = false, features = ["rustls-tls", "stream"] }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "0.2", features = ["macros", "signal"] }
 url = "2.1"
