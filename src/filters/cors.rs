@@ -1,8 +1,14 @@
-use warp::http::header::{ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_EXPOSE_HEADERS};
+use warp::http::header::{
+    ACCESS_CONTROL_ALLOW_CREDENTIALS, ACCESS_CONTROL_ALLOW_ORIGIN, ACCESS_CONTROL_EXPOSE_HEADERS,
+};
 use warp::Reply;
 
-pub(crate) fn allow_any_origin(reply: impl warp::Reply) -> impl warp::Reply {
-    warp::reply::with_header(reply, ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+pub(crate) fn allow_credentials(reply: impl warp::Reply) -> impl warp::Reply {
+    warp::reply::with_header(reply, ACCESS_CONTROL_ALLOW_CREDENTIALS, "true")
+}
+
+pub(crate) fn allow_origin(reply: impl warp::Reply, origin: String) -> impl warp::Reply {
+    warp::reply::with_header(reply, ACCESS_CONTROL_ALLOW_ORIGIN, origin)
 }
 
 pub(crate) fn expose_all_headers(reply: impl warp::Reply) -> impl warp::Reply {
@@ -29,12 +35,26 @@ mod tests {
     use warp::Reply;
 
     #[tokio::test]
-    async fn test_allow_any_origin() {
+    async fn test_allow_credentials() {
         let response = Response::builder().body("").unwrap();
-        let response = allow_any_origin(response).into_response();
+        let response = allow_credentials(response).into_response();
+        assert_eq!(
+            response
+                .headers()
+                .get(ACCESS_CONTROL_ALLOW_CREDENTIALS)
+                .unwrap(),
+            "true"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_allow_origin() {
+        let response = Response::builder().body("").unwrap();
+        let origin = "localhost".to_owned();
+        let response = allow_origin(response, origin).into_response();
         assert_eq!(
             response.headers().get(ACCESS_CONTROL_ALLOW_ORIGIN).unwrap(),
-            "*"
+            "localhost"
         );
     }
 
