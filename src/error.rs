@@ -37,6 +37,8 @@ pub(crate) enum Error {
     Hyper(hyper::Error),
     InvalidHeaderValue(hyper::header::InvalidHeaderValue),
     Io(io::Error),
+    Reqwest(reqwest::Error),
+    UrlParse(url::ParseError),
 }
 
 impl std::error::Error for Error {}
@@ -48,6 +50,8 @@ impl fmt::Display for Error {
             Error::Hyper(err) => err.fmt(f),
             Error::InvalidHeaderValue(err) => err.fmt(f),
             Error::Io(err) => err.fmt(f),
+            Error::Reqwest(err) => err.fmt(f),
+            Error::UrlParse(err) => err.fmt(f),
         }
     }
 }
@@ -73,6 +77,18 @@ impl From<hyper::header::InvalidHeaderValue> for Error {
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
         Error::Io(err)
+    }
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(err: reqwest::Error) -> Error {
+        Error::Reqwest(err)
+    }
+}
+
+impl From<url::ParseError> for Error {
+    fn from(err: url::ParseError) -> Error {
+        Error::UrlParse(err)
     }
 }
 
