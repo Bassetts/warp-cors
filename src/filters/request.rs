@@ -49,7 +49,7 @@ async fn create_request(
     let via_value = format!("2.0 {}", host);
     append_or_insert_header(&mut headers, VIA, &via_value)?;
 
-    let body = body.map_ok(|mut buf| buf.to_bytes());
+    let body = body.map_ok(|mut buf| buf.copy_to_bytes(buf.remaining()));
     let mut request = Request::builder()
         .method(method)
         .uri(url.as_str())
