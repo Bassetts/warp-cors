@@ -1,3 +1,4 @@
+use warp::http::header::ORIGIN;
 use warp::{Filter, Rejection, Reply};
 
 use crate::client::HttpsClient;
@@ -9,7 +10,10 @@ pub fn routes(host: String) -> impl Filter<Extract = impl Reply, Error = Rejecti
     let client = HttpsClient::new();
     preflight()
         .or(proxy(host, client))
-        .and(warp::header("origin"))
+        .and(
+            warp::header::optional(ORIGIN.as_str())
+                .map(|v: Option<String>| v.unwrap_or_else(|| String::from("*"))),
+        )
         .map(filters::allow_origin)
         .map(filters::allow_credentials)
         .with(warp::log("warp_cors"))
@@ -55,8 +59,19 @@ mod tests {
         assert!(request.matches(&routes).await);
 
         let request = warp::test::request()
+            .method("OPTIONS")
+            .header("access-control-request-method", "GET")
+            .path("http://localhost/http://example.org");
+        assert!(request.matches(&routes).await);
+
+        let request = warp::test::request()
             .method("GET")
             .header("origin", "localhost")
+            .path("http://localhost/http://example.org");
+        assert!(request.matches(&routes).await);
+
+        let request = warp::test::request()
+            .method("GET")
             .path("http://localhost/http://example.org");
         assert!(request.matches(&routes).await);
     }
