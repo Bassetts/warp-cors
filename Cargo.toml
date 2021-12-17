@@ -1,3 +1,5 @@
+cargo-features = ["strip"]
+
 [package]
 name = "warp-cors"
 version = "0.3.0"
@@ -23,3 +25,6 @@ serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.15", features = ["macros", "rt-multi-thread", "signal"] }
 url = "2.2"
 warp = "0.3"
+
+[profile.release]
+strip = true
