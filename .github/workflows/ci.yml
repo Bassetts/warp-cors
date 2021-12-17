@@ -92,7 +92,7 @@ jobs:
         include:
           - build: msrv
             os: ubuntu-latest
-            rust: 1.39.0
+            rust: 1.56.0
           - build: stable
             os: ubuntu-latest
             rust: stable
