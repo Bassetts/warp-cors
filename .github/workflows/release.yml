@@ -1,155 +1,71 @@
-name: release
+name: Publish Releases to Hub
 
+# When its time to do a release do a full cross platform build for all supported
+# architectures and push all of them to Docker Hub.
+# Only trigger on semver shaped tags.
 on:
   push:
     tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
+      - "v*.*.*"
 
 jobs:
-  create-release:
-    name: create release
+  docker:
     runs-on: ubuntu-latest
     steps:
-      - name: Create artifacts directory
-        run: mkdir artifacts
-
-      - name: Get the release version
-        id: get_version
-        run: echo "::set-output name=version::${GITHUB_REF#refs/tags/}"
-
-      - name: Save release version number to artifact
-        run: |
-          echo "${{ steps.get_version.outputs.version }}" \
-          > artifacts/release-version
-
-      - name: Create github release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.get_version.outputs.version }}
-          release_name: ${{ steps.get_version.outputs.version }}
-          draft: true
-
-      - name: Save upload url to artifact
-        run: |
-          echo "${{ steps.create_release.outputs.upload_url }}" \
-          > artifacts/release-upload-url
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: artifacts
-          path: artifacts
-
-  build-release:
-    name: build release
-    needs: create-release
-    runs-on: "${{ matrix.os }}"
-    env:
-      RUST_BACKTRACE: 1
-    strategy:
-      matrix:
-        build:
-          - linux
-          - linux-arm
-          - macos
-          - win-msvc
-        include:
-          - build: linux
-            os: ubuntu-latest
-            rust: nightly
-            target: x86_64-unknown-linux-musl
-          - build: linux-arm
-            os: ubuntu-latest
-            rust: nightly
-            target: arm-unknown-linux-gnueabihf
-          - build: macos
-            os: macos-latest
-            rust: nightly
-            target: x86_64-apple-darwin
-          - build: win-msvc
-            os: windows-latest
-            rust: nightly
-            target: x86_64-pc-windows-msvc
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v1
-        with:
-          name: artifacts
-          path: artifacts
-
-      - name: Get release version and upload url
-        id: release_info
-        shell: bash
-        run: |
-          upload_url="$(cat artifacts/release-upload-url)"
-          version="$(cat artifacts/release-version)"
-          echo "::set-output name=upload_url::$upload_url"
-          echo "::set-output name=version::$version"
-
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
-          target: ${{ matrix.target }}
-
-      - name: Build release binary
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          use-cross: true
-          args: --verbose --release --target ${{ matrix.target }}
-
-      - name: Strip release binary (Linux and macOS)
-        if: |
-          matrix.build == 'linux' ||
-          matrix.build == 'linux-arm' ||
-          matrix.build == 'macos'
+      - name: Prepare
+        id: prep
         run: |
-          if [[ "${{ matrix.build }}" == "linux-arm" ]]; then
-            sudo apt install binutils-arm-linux-gnueabihf
-            arm-linux-gnueabihf-strip target/${{ matrix.target }}/release/warp-cors
-          else
-            strip target/${{ matrix.target }}/release/warp-cors
+          DOCKER_IMAGE=7a6163/warp-cors
+          VERSION=edge
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
           fi
-
-      - name: Build archive
-        id: build_archive
-        shell: bash
-        run: |
-          echo "Release version: ${{ steps.release_info.outputs.version }}"
-          echo "Release upload url: ${{ steps.release_info.outputs.upload_url }}"
-
-          staging="warp-cors-\
-          ${{ steps.release_info.outputs.version }}-\
-          ${{ matrix.target }}"
-          mkdir -p "$staging"
-
-          cp {README.md,LICENSE} "$staging/"
-
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            cp "target/${{ matrix.target }}/release/warp-cors.exe" "$staging/"
-            7z a "$staging.zip" "$staging"
-            echo "::set-output name=asset::$staging.zip"
-          else
-            cp "target/${{ matrix.target }}/release/warp-cors" "$staging/"
-            tar czf "$staging.tar.gz" "$staging"
-            echo "::set-output name=asset::$staging.tar.gz"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            VERSION=nightly
           fi
+          TAGS="${DOCKER_IMAGE}:${VERSION}"
+          if [[ $VERSION =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+            TAGS="$TAGS,${DOCKER_IMAGE}:latest"
+          fi
+          echo ::set-output name=tags::${TAGS}
 
-      - name: Upload release archive
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
         with:
-          upload_url: ${{ steps.release_info.outputs.upload_url }}
-          asset_path: ${{ steps.build_archive.outputs.asset }}
-          asset_name: ${{ steps.build_archive.outputs.asset }}
-          asset_content_type: application/octet-stream
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v3
+        with:
+          builder: ${{ steps.buildx.outputs.name }}
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.prep.outputs.tags }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }}
