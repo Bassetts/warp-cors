@@ -25,7 +25,7 @@ to be installed.
 
 ### Cargo
 
-The minimum supported Rust version is **1.56.0**, warp-cors will not work with
+The minimum supported Rust version is **1.57.0**, warp-cors will not work with
 versions lower than this.
 
 ```shell
