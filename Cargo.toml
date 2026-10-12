@@ -4,7 +4,6 @@ version = "0.4.0"
 authors = ["Jason Liquorish"]
 description = "warp-cors is a proxy server which enables CORS for the proxied request"
 documentation = "https://github.com/Bassetts/warp-cors"
-homepage = "https://github.com/Bassetts/warp-cors"
 repository = "https://github.com/Bassetts/warp-cors"
 readme = "README.md"
 keywords = ["cors", "proxy"]
