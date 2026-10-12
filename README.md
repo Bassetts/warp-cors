@@ -9,9 +9,20 @@ warp-cors is a proxy server which enables CORS for the proxied request.
 The path of the request is validated and then used as the url to proxy. Only
 http and https protocols are allowed and must be specified.
 
-Preflight requests will allow any methods and headers. All proxied requests will
-have any origin allowed and allow all headers in the request to be exposed in the
-reponse.
+Preflight `OPTIONS` requests are answered locally by echoing
+`Access-Control-Request-Method` and `Access-Control-Request-Headers` into
+`Access-Control-Allow-Methods` and `Access-Control-Allow-Headers`. There is no
+method or header allowlist. Currently, both request headers must be present for
+the request to be handled as a preflight; otherwise it is proxied upstream.
+
+Successful proxy and preflight responses echo the request's `Origin` in
+`Access-Control-Allow-Origin`, or use `*` when no `Origin` is supplied. They also
+set `Access-Control-Allow-Credentials: true`.
+
+Proxied responses list the forwarded upstream **response header names** in
+`Access-Control-Expose-Headers`, making those headers readable by browser
+JavaScript. Upstream `Set-Cookie` headers are removed, and request `Cookie`
+headers are not forwarded upstream.
 
 ## Installation
 
