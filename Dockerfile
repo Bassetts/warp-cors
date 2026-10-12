@@ -10,7 +10,7 @@ RUN rm -rf ./src
 COPY ./src ./src
 RUN cargo install --path .
 
-FROM debian:buster-slim
+FROM debian:trixie-slim
 RUN apt-get update && apt-get install -y ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /usr/local/cargo/bin/warp-cors /usr/local/bin/warp-cors

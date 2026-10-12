@@ -17,7 +17,7 @@ reponse.
 
 ### Binaries
 
-[Archives of precompiled binaries](https://github.com/Bassetts/warp-cors/releases) 
+[Archives of precompiled binaries](https://github.com/Bassetts/warp-cors/releases)
 are available for Linux, macOS, and Windows.
 
 The Windows binaries require [Microsoft Visual C++ 2015 Redistributable](https://www.microsoft.com/en-us/download/details.aspx?id=53587)
@@ -25,8 +25,7 @@ to be installed.
 
 ### Cargo
 
-The minimum supported Rust version is **1.59.0**, warp-cors will not work with
-versions lower than this.
+The minimum supported Rust version (MSRV) is **1.88.0**.
 
 ```shell
 $ cargo install warp-cors
@@ -34,8 +33,8 @@ $ cargo install warp-cors
 
 ### Docker
 
-Docker images are published in the 
-[bassetts/warp-cors](https://hub.docker.com/repository/docker/bassetts/warp-cors) 
+Docker images are published in the
+[bassetts/warp-cors](https://hub.docker.com/repository/docker/bassetts/warp-cors)
 repository.
 
 ```shell
@@ -53,6 +52,7 @@ If you are running warp-cors on a pubicly accessible hostname it is
 recommended to set the `--hostname` flag to match.
 
 #### Example
+
 ```shell
 $ warp-cors --port 3000 --hostname cors.example.org
 ```

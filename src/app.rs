@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use clap::{crate_authors, crate_name, crate_version, App, AppSettings, Arg};
+use clap::{Arg, ArgAction, Command};
 use log::{debug, error, info};
 #[cfg(unix)]
 use tokio::signal::unix::{signal, SignalKind};
@@ -15,28 +15,33 @@ pub struct Config {
 
 impl Config {
     pub fn parse() -> Result<Config, Box<dyn std::error::Error>> {
-        let matches = App::new(crate_name!())
-            .author(crate_authors!())
-            .version(crate_version!())
-            .setting(AppSettings::UnifiedHelpMessage)
+        let matches = Command::new(env!("CARGO_PKG_NAME"))
+            .author(env!("CARGO_PKG_AUTHORS"))
+            .version(env!("CARGO_PKG_VERSION"))
+            .next_line_help(false)
+            .disable_help_flag(true)
+            .arg(Arg::new("port").short('p').long("port").value_name("PORT"))
             .arg(
-                Arg::with_name("port")
-                    .short("p")
-                    .long("port")
-                    .value_name("PORT"),
-            )
-            .arg(
-                Arg::with_name("host")
-                    .short("h")
+                Arg::new("host")
+                    .short('h')
                     .long("hostname")
                     .value_name("HOST"),
             )
+            .arg(
+                Arg::new("help")
+                    .long("help")
+                    .action(ArgAction::HelpLong)
+                    .help("Print help"),
+            )
             .get_matches();
 
-        let port = matches.value_of("port").map_or(Ok(3030), |p| p.parse())?;
+        let port = matches
+            .get_one::<String>("port")
+            .map_or(Ok(3030), |p| p.parse())?;
 
         let host = matches
-            .value_of("host")
+            .get_one::<String>("host")
+            .map(String::as_str)
             .unwrap_or(env!("CARGO_PKG_NAME"))
             .to_owned();
 
@@ -51,17 +56,18 @@ pub async fn run(config: Config) {
 
     debug!("Using host/alias: {}", config.host);
 
-    let (addr, server) =
-        warp::serve(routes::routes(config.host)).bind_with_graceful_shutdown(addr, async {
+    let server = warp::serve(routes::routes(config.host)).bind(addr).await;
+    info!("Listening on http://{}", addr);
+
+    server
+        .graceful(async {
             let signal = shutdown_signal().await;
             if let Err(e) = signal {
                 error!("server error: {}", e);
             }
-        });
-
-    info!("Listening on http://{}", addr);
-
-    server.await;
+        })
+        .run()
+        .await;
 }
 
 #[cfg(not(unix))]

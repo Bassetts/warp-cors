@@ -11,18 +11,21 @@ keywords = ["cors", "proxy"]
 categories = ["command-line-utilities", "web-programming"]
 license  = "MIT"
 edition = "2021"
+rust-version = "1.88"
 
 [dependencies]
-clap = { version = "2.34", default-features = false }
-futures-util = "0.3"
-hyper-rustls = "0.23"
-log = "0.4"
-pretty_env_logger = "0.4"
-reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "stream"] }
-serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.15", features = ["macros", "rt-multi-thread", "signal"] }
-url = "2.2"
-warp = "0.3"
+clap = { version = "4.6.7", default-features = false, features = ["std", "help", "usage", "error-context"] }
+futures-util = "0.3.34"
+log = "0.4.34"
+pretty_env_logger = "0.5.0"
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "stream"] }
+serde = { version = "1.0.229", features = ["derive"] }
+tokio = { version = "1.53.2", features = ["macros", "rt-multi-thread", "signal"] }
+url = "2.5.8"
+warp = { version = "0.4.3", features = ["server"] }
+
+[dev-dependencies]
+warp = { version = "0.4.3", features = ["test"] }
 
 [profile.release]
 strip = true

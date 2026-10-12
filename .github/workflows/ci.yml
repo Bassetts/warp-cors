@@ -3,10 +3,12 @@ name: ci
 on:
   pull_request:
   push:
-    branches:
-      - main
+    branches: [main]
   schedule:
     - cron: "00 01 * * *"
+
+permissions:
+  contents: read
 
 jobs:
   check:
@@ -14,61 +16,52 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
 
       - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
+        run: cargo check --locked
 
   fmt:
     name: rustfmt
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
           components: rustfmt
 
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
   clippy:
     name: clippy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
           components: clippy
 
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
       - name: Run cargo clippy
-        uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-targets -- -D warnings
+        run: cargo clippy --locked --all-targets -- -D warnings
 
   test:
     name: test
@@ -78,21 +71,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build:
-          - msrv
-          - stable
-          - beta
-          - nightly
-          - nightly-musl
-          - nightly-32
-          - nightly-arm
-          - macos
-          - win-msvc
-          - win-gnu
         include:
           - build: msrv
             os: ubuntu-latest
-            rust: 1.59.0
+            rust: 1.88
           - build: stable
             os: ubuntu-latest
             rust: stable
@@ -117,49 +99,53 @@ jobs:
           - build: macos
             os: macos-latest
             rust: nightly
+          - build: macos-intel
+            os: macos-15-intel
+            rust: nightly
           - build: win-msvc
             os: windows-latest
             rust: nightly
           - build: win-gnu
             os: windows-latest
-            rust: nightly-x86_64-gnu
+            rust: nightly-x86_64-pc-windows-gnu
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
-          override: true
           target: ${{ matrix.target }}
 
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cross
+        if: matrix.target != ''
+        run: cargo install cross --locked
+
       - name: Build warp-cors natively
-        uses: actions-rs/cargo@v1
         if: matrix.target == ''
-        with:
-          command: build
-          args: --verbose
+        run: cargo build --locked --all-targets
 
       - name: Build warp-cors with cross
-        uses: actions-rs/cargo@v1
         if: matrix.target != ''
-        with:
-          command: build
-          use-cross: true
-          args: --verbose --target ${{ matrix.target }}
+        run: cross build --locked --all-targets --target ${{ matrix.target }}
 
       - name: Run tests natively
-        uses: actions-rs/cargo@v1
         if: matrix.target == ''
-        with:
-          command: test
+        run: cargo test --locked --all-targets
 
       - name: Run tests with cross
-        uses: actions-rs/cargo@v1
         if: matrix.target != ''
-        with:
-          command: test
-          use-cross: true
-          args: --target ${{ matrix.target }}
+        run: cross test --locked --all-targets --target ${{ matrix.target }}
+
+  docker:
+    name: build docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Build Docker image
+        run: docker build --tag warp-cors:ci .

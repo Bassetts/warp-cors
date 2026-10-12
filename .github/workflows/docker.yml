@@ -2,8 +2,10 @@ name: docker
 
 on:
   release:
-    types:
-      - published
+    types: [published]
+
+permissions:
+  contents: read
 
 jobs:
   docker-build:
@@ -12,26 +14,32 @@ jobs:
     steps:
       - name: Get the release version
         id: get_version
-        run: echo "::set-output name=version::${GITHUB_REF#refs/tags/}"
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Get short release version
         id: get_short_version
-        run: |
-          tag_name="${{ steps.get_version.outputs.version }}"
-          version_parts=(${tag_name//./ })
-          short_version="${version_parts[0]}"."${version_parts[1]}"
-          echo "::set-output name=version::$short_version"
+        env:
+          RELEASE_VERSION: ${{ steps.get_version.outputs.version }}
+        run: echo "version=${RELEASE_VERSION%.*}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
-      - name: Build Docker image
-        uses: docker/build-push-action@v1
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: bassetts/warp-cors
-          tags: >-
-            ${{ steps.get_version.outputs.version }},
-            ${{ steps.get_short_version.outputs.version }},
-            latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            bassetts/warp-cors:${{ steps.get_version.outputs.version }}
+            bassetts/warp-cors:${{ steps.get_short_version.outputs.version }}
+            bassetts/warp-cors:latest
