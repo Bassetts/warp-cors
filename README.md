@@ -41,6 +41,25 @@ repository.
 $ docker run -dp 3030:3030 bassetts/warp-cors
 ```
 
+To build the image locally:
+
+```shell
+$ docker build -t warp-cors .
+```
+
+The Dockerfile pins the Rust compiler and both base images by digest, and builds
+with `cargo build --locked --release` to use the committed `Cargo.lock`.
+BuildKit caches downloaded crates and compiled dependencies between builds;
+these caches are excluded from the runtime image.
+
+The runtime image contains Debian slim, the stripped executable, and a CA
+certificate bundle copied from the builder for HTTPS requests. No packages are
+downloaded during runtime image assembly. The existing weekly Docker Dependabot
+configuration proposes base image updates; merging them refreshes the image
+packages and certificate bundle.
+These pins make build inputs repeatable; image timestamps and build metadata
+can still differ between builds.
+
 ## Usage
 
 By default warp-cors will listen on port `3030` and use the package name
