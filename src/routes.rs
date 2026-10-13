@@ -10,12 +10,8 @@ pub fn routes(host: String) -> impl Filter<Extract = (impl Reply,), Error = Reje
     let client = HttpsClient::new();
     preflight()
         .or(proxy(host, client))
-        .and(
-            warp::header::optional(ORIGIN.as_str())
-                .map(|v: Option<String>| v.unwrap_or_else(|| String::from("*"))),
-        )
+        .and(warp::header::optional(ORIGIN.as_str()))
         .map(filters::allow_origin)
-        .map(filters::allow_credentials)
         .with(warp::log("warp_cors"))
         .recover(error::recover)
 }
@@ -41,6 +37,49 @@ fn proxy(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn test_preflight_cors_origins() {
+        let routes = routes("example.org".to_owned());
+        for (origin, allowed_origin, credentials) in [
+            (
+                Some("https://example.org"),
+                Some("https://example.org"),
+                true,
+            ),
+            (Some("null"), Some("null"), true),
+            (None, Some("*"), false),
+            (Some("*"), None, false),
+            (Some("localhost"), None, false),
+        ] {
+            let request = warp::test::request()
+                .method("OPTIONS")
+                .header("access-control-request-method", "GET")
+                .header("access-control-request-headers", "authorization")
+                .path("/https://example.org/");
+            let request = match origin {
+                Some(origin) => request.header("origin", origin),
+                None => request,
+            };
+            let response = request.reply(&routes).await;
+            assert_eq!(response.status(), 200);
+            assert_eq!(
+                response
+                    .headers()
+                    .get("access-control-allow-origin")
+                    .map(|value| value.to_str().unwrap()),
+                allowed_origin,
+            );
+            assert_eq!(
+                response
+                    .headers()
+                    .get("access-control-allow-credentials")
+                    .map(|value| value.to_str().unwrap()),
+                credentials.then_some("true"),
+            );
+            assert_eq!(response.headers()["vary"], "Origin");
+        }
+    }
 
     #[tokio::test]
     async fn test_routes() {

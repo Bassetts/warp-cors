@@ -15,9 +15,13 @@ Preflight `OPTIONS` requests are answered locally by echoing
 method or header allowlist. Currently, both request headers must be present for
 the request to be handled as a preflight; otherwise it is proxied upstream.
 
-Successful proxy and preflight responses echo the request's `Origin` in
-`Access-Control-Allow-Origin`, or use `*` when no `Origin` is supplied. They also
-set `Access-Control-Allow-Credentials: true`.
+Successful proxy and preflight responses echo a valid serialized request
+`Origin` (such as `https://example.org` or the opaque origin `null`) in
+`Access-Control-Allow-Origin` and set `Access-Control-Allow-Credentials: true`.
+When no `Origin` is supplied, they use `Access-Control-Allow-Origin: *` and omit
+`Access-Control-Allow-Credentials`. Invalid origins receive neither header.
+Responses include `Vary: Origin`, preserving any upstream `Vary` fields; an
+existing `Vary: *` already covers all request headers.
 
 Proxied responses list the forwarded upstream **response header names** in
 `Access-Control-Expose-Headers`, making those headers readable by browser
