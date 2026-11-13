@@ -161,7 +161,7 @@ jobs:
 
       - name: Install cross
         if: matrix.target != ''
-        run: cargo install cross --locked
+        run: cargo install cross --locked --version 0.2.5
 
       - name: Build warp-cors natively
         if: matrix.target == ''

@@ -1,0 +1,9 @@
+# Pin the images used by cross 0.2.5; review these when updating cross.
+[target.x86_64-unknown-linux-musl]
+image = "ghcr.io/cross-rs/x86_64-unknown-linux-musl:0.2.5@sha256:77db671d8356a64ae72a3e1415e63f547f26d374fbe3c4762c1cd36c7eac7b99"
+
+[target.i686-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/i686-unknown-linux-gnu:0.2.5@sha256:2647400f884dd399a3ce6f6d918fec0776d43e73f471f52e310cbe664ac1671f"
+
+[target.arm-unknown-linux-gnueabihf]
+image = "ghcr.io/cross-rs/arm-unknown-linux-gnueabihf:0.2.5@sha256:2e3ba7a2284844975124febea982bda2586ae4910ef51294729284ff31b0aec5"
