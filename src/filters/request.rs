@@ -1,6 +1,6 @@
 use futures_util::stream::TryStreamExt;
 use log::{error, trace};
-use warp::http::header::{HeaderName, CONNECTION, COOKIE, HOST, VIA};
+use warp::http::header::{HeaderName, COOKIE, HOST, VIA};
 use warp::http::{HeaderMap, HeaderValue, Method};
 use warp::{header, Buf, Filter, Rejection, Stream};
 
@@ -27,21 +27,7 @@ async fn create_request(
     body: impl Stream<Item = Result<impl Buf, warp::Error>> + Send + Sync + 'static,
     host: String,
 ) -> Result<client::Request, Rejection> {
-    if let Some(connection_header) = headers.remove(CONNECTION) {
-        let headers_to_remove: Vec<&str> = connection_header
-            .to_str()
-            .unwrap_or_else(|e| {
-                error!("Error converting `connection` header to str: {}", e);
-                Default::default()
-            })
-            .split(',')
-            .map(|v| v.trim())
-            .collect();
-
-        for header in headers_to_remove {
-            headers.remove(header);
-        }
-    }
+    crate::headers::remove_hop_by_hop_headers(&mut headers);
 
     headers.remove(COOKIE);
     headers.remove(HOST);
@@ -84,4 +70,45 @@ fn append_or_insert_header(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_create_request_filters_connection_headers() {
+        let mut headers = HeaderMap::new();
+        headers.append("connection", HeaderValue::from_static("x-first"));
+        headers.append("connection", HeaderValue::from_static("X-Second"));
+        headers.insert("x-first", HeaderValue::from_static("private"));
+        headers.insert("x-second", HeaderValue::from_static("private"));
+        headers.insert("transfer-encoding", HeaderValue::from_static("chunked"));
+        headers.insert("cookie", HeaderValue::from_static("session=example"));
+        headers.insert("host", HeaderValue::from_static("proxy.example.org"));
+        headers.insert("authorization", HeaderValue::from_static("Bearer example"));
+        let body = futures_util::stream::empty::<Result<&'static [u8], warp::Error>>();
+        let request = create_request(
+            Method::GET,
+            url::Url::parse("https://example.org/").unwrap(),
+            headers,
+            body,
+            "proxy.example.org".to_owned(),
+        )
+        .await
+        .unwrap();
+
+        for name in [
+            "connection",
+            "x-first",
+            "x-second",
+            "transfer-encoding",
+            "cookie",
+            "host",
+        ] {
+            assert!(!request.headers().contains_key(name), "forwarded {name}");
+        }
+        assert_eq!(request.headers()["authorization"], "Bearer example");
+        assert_eq!(request.headers()["via"], "2.0 proxy.example.org");
+    }
 }

@@ -30,6 +30,10 @@ Proxied responses list the forwarded upstream **response header names** in
 JavaScript. Upstream `Set-Cookie` headers are removed, and request `Cookie`
 headers are not forwarded upstream.
 
+Connection-specific headers are removed in both directions, including headers
+named by any `Connection` header. The HTTP client and server manage framing and
+connection headers for their respective connections.
+
 ## Installation
 
 ### Binaries
