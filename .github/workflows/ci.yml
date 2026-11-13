@@ -28,6 +28,27 @@ jobs:
       - name: Verify actions lockfile
         run: gh actions-lock --verify
 
+  audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked --version 0.23.0
+
+      - name: Audit dependencies
+        run: cargo audit --file Cargo.lock
+
   check:
     name: cargo check
     runs-on: ubuntu-latest
