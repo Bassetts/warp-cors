@@ -12,8 +12,10 @@ http and https protocols are allowed and must be specified.
 Preflight `OPTIONS` requests are answered locally by echoing
 `Access-Control-Request-Method` and `Access-Control-Request-Headers` into
 `Access-Control-Allow-Methods` and `Access-Control-Allow-Headers`. There is no
-method or header allowlist. Currently, both request headers must be present for
-the request to be handled as a preflight; otherwise it is proxied upstream.
+method or header allowlist. `Access-Control-Request-Method` is required, while
+`Access-Control-Request-Headers` is optional. When no headers are requested,
+`Access-Control-Allow-Headers` is omitted. Preflight responses also vary by
+`Access-Control-Request-Method` and `Access-Control-Request-Headers`.
 
 Successful proxy and preflight responses echo a valid serialized request
 `Origin` (such as `https://example.org` or the opaque origin `null`) in

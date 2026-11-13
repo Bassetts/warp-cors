@@ -20,7 +20,7 @@ fn preflight() -> impl Filter<Extract = (impl Reply,), Error = Rejection> + Copy
     filters::is_url_path()
         .and(warp::options())
         .and(warp::header("access-control-request-method"))
-        .and(warp::header("access-control-request-headers"))
+        .and(warp::header::optional("access-control-request-headers"))
         .and_then(handlers::preflight_request)
 }
 
@@ -77,7 +77,73 @@ mod tests {
                     .map(|value| value.to_str().unwrap()),
                 credentials.then_some("true"),
             );
-            assert_eq!(response.headers()["vary"], "Origin");
+            let vary = response
+                .headers()
+                .get_all("vary")
+                .iter()
+                .flat_map(|value| value.to_str().unwrap().split(','))
+                .map(str::trim)
+                .collect::<Vec<_>>();
+            assert_eq!(
+                vary,
+                [
+                    "Access-Control-Request-Method",
+                    "Access-Control-Request-Headers",
+                    "Origin",
+                ]
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_preflight_optional_request_headers() {
+        let routes = routes("example.org".to_owned());
+        for method in ["GET", "PATCH"] {
+            for headers in [None, Some("authorization, content-type")] {
+                let request = warp::test::request()
+                    .method("OPTIONS")
+                    .header("origin", "https://example.org")
+                    .header("access-control-request-method", method)
+                    .path("/https://example.org/");
+                let request = match headers {
+                    Some(headers) => request.header("access-control-request-headers", headers),
+                    None => request,
+                };
+                let response = request.reply(&routes).await;
+                assert_eq!(response.status(), 200);
+                assert!(response.body().is_empty());
+                assert_eq!(response.headers()["access-control-allow-methods"], method);
+                assert_eq!(
+                    response
+                        .headers()
+                        .get("access-control-allow-headers")
+                        .map(|value| value.to_str().unwrap()),
+                    headers,
+                );
+                assert_eq!(
+                    response.headers()["access-control-allow-origin"],
+                    "https://example.org"
+                );
+                assert_eq!(
+                    response.headers()["access-control-allow-credentials"],
+                    "true"
+                );
+                let vary = response
+                    .headers()
+                    .get_all("vary")
+                    .iter()
+                    .flat_map(|value| value.to_str().unwrap().split(','))
+                    .map(str::trim)
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    vary,
+                    [
+                        "Access-Control-Request-Method",
+                        "Access-Control-Request-Headers",
+                        "Origin",
+                    ]
+                );
+            }
         }
     }
 
@@ -131,14 +197,14 @@ mod tests {
             .method("OPTIONS")
             .header("access-control-request-method", "GET")
             .path("http://localhost/http://example.org");
-        assert!(!request.matches(&preflight).await);
+        assert!(request.matches(&preflight).await);
 
         let request = warp::test::request()
             .method("OPTIONS")
             .header("access-control-request-method", "GET")
             .header("origin", "localhost")
             .path("http://localhost/http://example.org");
-        assert!(!request.matches(&preflight).await);
+        assert!(request.matches(&preflight).await);
 
         let request = warp::test::request()
             .method("GET")
