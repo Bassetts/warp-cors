@@ -141,6 +141,22 @@ jobs:
         if: matrix.target != ''
         run: cross test --locked --all-targets --target ${{ matrix.target }}
 
+  package:
+    name: cargo package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check crate package
+        run: cargo package --locked
+
   docker:
     name: build docker image
     runs-on: ubuntu-latest

@@ -125,3 +125,8 @@ $ RUST_LOG=warp_cors::filters::request=trace warp-cors
 ```
 
 [`pretty_env_logger`]: https://docs.rs/pretty_env_logger/*/pretty_env_logger/
+
+## Releasing
+
+See [RELEASING.md](RELEASING.md) for GitHub release, Docker, and crates.io
+publishing, including how to publish an existing tag.
