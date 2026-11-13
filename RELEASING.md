@@ -14,12 +14,13 @@ Release tags match the version in `Cargo.toml` without a `v` prefix, for example
    git push origin 0.4.1
    ```
 
-3. Wait for the `release` workflow to finish building the binary archives and
-   creating the draft GitHub release.
-4. Open the draft in **Releases**, review its notes and attached archives, and
-   publish it.
+3. Wait for the `release` workflow to finish building and attesting the binary
+   archives and creating the draft GitHub release.
+4. Open the draft in **Releases**, review its notes, and confirm the archives,
+   `SHA256SUMS`, and `provenance.json` are attached before publishing it.
 5. Wait for the `docker` and `publish` workflows to complete successfully.
-6. Confirm the new version is available on Docker Hub and crates.io.
+6. Confirm the new version is available on Docker Hub and crates.io, and follow
+   [VERIFYING.md](VERIFYING.md) to verify an archive and the Docker image.
 
 ## Publishing an existing tag
 

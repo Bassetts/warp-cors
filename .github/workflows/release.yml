@@ -70,7 +70,7 @@ jobs:
         run: |
           staging="warp-cors-${GITHUB_REF_NAME}-${{ matrix.target }}"
           mkdir -p "$staging"
-          cp README.md LICENSE "$staging/"
+          cp README.md LICENSE VERIFYING.md "$staging/"
 
           if [ "$RUNNER_OS" = "Windows" ]; then
             cp "target/${{ matrix.target }}/release/warp-cors.exe" "$staging/"
@@ -95,6 +95,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Download release archives
         uses: actions/download-artifact@v8
@@ -103,8 +105,21 @@ jobs:
           pattern: release-*
           merge-multiple: true
 
+      - name: Generate release checksums
+        working-directory: dist
+        run: sha256sum *.tar.gz *.zip > SHA256SUMS
+
+      - name: Attest release assets
+        id: attest
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/*
+
       - name: Create github release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-        run: gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "$TAG"
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          cp "$ATTESTATION_BUNDLE" dist/provenance.json
+          gh release create "$TAG" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "$TAG"
