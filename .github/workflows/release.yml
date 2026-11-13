@@ -81,7 +81,7 @@ jobs:
           fi
 
       - name: Upload release archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.target }}
           path: ${{ steps.build_archive.outputs.asset }}
@@ -95,7 +95,7 @@ jobs:
       contents: write
     steps:
       - name: Download release archives
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           pattern: release-*

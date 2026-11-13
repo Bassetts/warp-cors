@@ -1,6 +1,12 @@
 version: 2
 
 updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "bassetts"
   - package-ecosystem: cargo
     directory: /
     schedule:
