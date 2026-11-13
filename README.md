@@ -41,6 +41,9 @@ connection headers for their respective connections.
 [Archives of precompiled binaries](https://github.com/Bassetts/warp-cors/releases)
 are available for Linux, macOS, and Windows.
 
+See [VERIFYING.md](VERIFYING.md) for checksum and provenance verification before
+extracting or running downloaded archives.
+
 The Windows binaries require [Microsoft Visual C++ 2015 Redistributable](https://www.microsoft.com/en-us/download/details.aspx?id=53587)
 to be installed.
 
@@ -57,6 +60,9 @@ $ cargo install warp-cors
 Docker images are published in the
 [bassetts/warp-cors](https://hub.docker.com/repository/docker/bassetts/warp-cors)
 repository.
+
+See [VERIFYING.md](VERIFYING.md#docker-images) to verify an image's provenance
+and run the verified image by digest.
 
 ```shell
 $ docker run -dp 3030:3030 bassetts/warp-cors
