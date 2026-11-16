@@ -6,7 +6,6 @@ workflows:
     '.github/workflows/ci.yml':
         - 'actions/checkout@v7'
         - 'dtolnay/rust-toolchain@master'
-        - 'dtolnay/rust-toolchain@stable'
         - 'swatinem/rust-cache@v2'
     '.github/workflows/docker.yml':
         - 'actions/attest@v4'
@@ -16,7 +15,7 @@ workflows:
         - 'docker/setup-buildx-action@v4'
     '.github/workflows/publish.yml':
         - 'actions/checkout@v7'
-        - 'dtolnay/rust-toolchain@stable'
+        - 'dtolnay/rust-toolchain@master'
         - 'rust-lang/crates-io-auth-action@v1'
         - 'swatinem/rust-cache@v2'
     '.github/workflows/release.yml':
@@ -65,11 +64,6 @@ dependencies:
     'dtolnay/rust-toolchain@master':
         ref: 'master'
         commit: 'sha1-683b588c487a69d01f6c6ddf40f036ff682cc2c8'
-        owner_id: 1940490
-        repo_id: 260749683
-    'dtolnay/rust-toolchain@stable':
-        ref: 'stable'
-        commit: 'sha1-b725eda525362e7cf34af9a7243cac1e3f01a7ec'
         owner_id: 1940490
         repo_id: 260749683
     'rust-lang/crates-io-auth-action@v1':
