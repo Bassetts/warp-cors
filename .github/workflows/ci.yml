@@ -139,7 +139,8 @@ jobs:
             rust: nightly
             target: x86_64-unknown-linux-musl
           - build: nightly-32
-            os: ubuntu-latest
+            # Ubuntu 26.04 blocks i386 socket calls: https://github.com/actions/runner-images/issues/14790
+            os: ubuntu-24.04
             rust: nightly
             target: i686-unknown-linux-gnu
           - build: nightly-arm
